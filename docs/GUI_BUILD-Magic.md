@@ -60,6 +60,8 @@ To achieve fluid and magic-like crafting of stunningly unique, personalized, pri
   - [ ] Handle image and text responses
   - [ ] Robust error handling and user messaging for API failures
 
+_See issues.md as the last sub task causes an error.
+
 _Check off each item as implemented and verified. Update with further enhancements as needed._
 
 _Once all items are implemented and verified, check them off and update this section with the next set of actionables._

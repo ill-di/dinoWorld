@@ -7,6 +7,19 @@ Historical issues and completed work can be found in the archive directory (e.g.
 
 ## Active Issues
 
+### GenAI Integration Issues (2025-07-21)
+
+1. **GenAI API Error in GUI Sidebar**
+   - **Status:** Active
+   - **Impact:** "Ask GenAI" button functionality broken
+   - **Root Cause:** Incomplete Gemini API integration
+   - **Resolution Path:**
+     - Configure Gemini API keys in environment
+     - Complete API integration in `/server/routes/genai.ts`
+     - Implement proper error handling
+   - **Dependencies:** GitHub Secrets setup for API keys
+   - **Priority:** High (blocks core GenAI assistant functionality)
+
 ### Server Improvements (2025-07-15)
 
 #### Error Handling Enhancement
