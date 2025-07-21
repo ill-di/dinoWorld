@@ -148,20 +148,45 @@ main() {
     if [[ "$CHECK_MODE" == "schema" || "$CHECK_MODE" == "all" ]]; then
         # Layer 3: Schema validation
         VERBOSE=${VERBOSE:-false}
+        tables_missing=false
+        
         for table in "Calendar" "Event"; do
             if ! PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc \
                 "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = '$table');" | grep -q t; then
-                if [[ "$VERBOSE" == "true" ]]; then
-                    echo "Schema: ERROR: Table '$table' not found in schema 'public'"
-                    echo "Available tables:"
-                    PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "\dt"
-                else
-                    echo "Schema: ERROR: Table '$table' not found"
-                fi
-                exit 1
+                tables_missing=true
+                echo "Schema: WARNING: Table '$table' not found, attempting automatic fix..."
+                break
             fi
         done
-        echo "Schema: VALID"
+        
+        if [[ "$tables_missing" == "true" ]]; then
+            # Attempt auto-fix using prisma migrate
+            if npx --yes prisma migrate deploy --schema="$PRISMA_SCHEMA_PATH"; then
+                # Verify fix worked
+                tables_valid=true
+                for table in "Calendar" "Event"; do
+                    if ! PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc \
+                        "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = '$table');" | grep -q t; then
+                        tables_valid=false
+                        break
+                    fi
+                done
+                
+                if [[ "$tables_valid" == "true" ]]; then
+                    echo "Schema: VALID"
+                else
+                    echo "Schema: ERROR: Auto-fix failed. Manual intervention required."
+                    [[ "$VERBOSE" == "true" ]] && echo "Error: Tables still missing after migration. Try running 'prisma migrate deploy' manually."
+                    exit 1
+                fi
+            else
+                echo "Schema: ERROR: Auto-fix failed. Manual intervention required."
+                [[ "$VERBOSE" == "true" ]] && echo "Error: Migration failed. Run 'prisma migrate deploy' manually for detailed error messages."
+                exit 1
+            fi
+        else
+            echo "Schema: VALID"
+        fi
     fi
 }
 

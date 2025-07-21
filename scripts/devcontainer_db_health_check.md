@@ -4,7 +4,7 @@
 
 **Script Implementation Review Stamp**
 
-> ✅ Verified: As of 2025-07-21, the implementation in `devcontainer_db_health_check.sh` fully meets the documented specification. All layers (Core Database Service, Prisma Setup, Application Schema) are implemented and verified. The script correctly handles schema validation, provides detailed error reporting, and includes verbose output options. If this documentation is modified, this verification stamp is invalidated and a new review will be required.
+> ✅ Verified: As of 2025-07-21, the implementation in `devcontainer_db_health_check.sh` fully meets the documented specification. All layers (Core Database Service, Prisma Setup, Application Schema) are implemented and verified. The script correctly handles schema validation, provides detailed error reporting, includes verbose output options, and implements automatic schema repair via Prisma migrations. If this documentation is modified, this verification stamp is invalidated and a new review will be required.
 
 ### Script Functionality
 
@@ -51,6 +51,7 @@ _Only runs if Layer 2 succeeds_
 
 - Verify Calendar table exists
 - Verify Event table exists
+- Auto-fix missing tables via Prisma migrations
 
 ```bash
 ./devcontainer_db_health_check.sh --check=schema
@@ -58,11 +59,26 @@ _Only runs if Layer 2 succeeds_
 #         Prisma: OK
 #         Schema: VALID
 #
-# If a required table is missing:
+# If a required table is missing (auto-fix enabled):
 # Output: DB: UP
 #         Prisma: OK
-#         Schema: ERROR: Table 'Calendar' not found
+#         Schema: WARNING: Table 'Calendar' not found, attempting automatic fix...
+#         [Running prisma migrate deploy...]
+#         Schema: VALID
+#
+# If auto-fix fails:
+# Output: DB: UP
+#         Prisma: OK
+#         Schema: ERROR: Auto-fix failed. Manual intervention required.
+#         [Details of the error will be shown in verbose mode]
 ```
+
+The auto-fix process will:
+
+1. Detect missing required tables (Calendar and Event)
+2. Run `prisma migrate deploy` to apply pending migrations
+3. Verify schema state after migration
+4. Report success or detailed error if fix fails
 
 #### Usage Examples
 
